@@ -1,0 +1,24 @@
+{
+    "name": "ryantxr/slack-webhook",
+    "description": "A minimal slack library",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["slack", "webhook"],
+    "authors": [
+        {
+            "name": "Ryan Teixeira",
+            "email": "ryantxr@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.1",
+        "guzzlehttp/guzzle": "^6.3",
+        "psr/log": "^1.1",
+        "nesbot/carbon": "^2.20"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ryantxr\\Slack\\": "src/"
+        }
+    }
+}
