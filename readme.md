@@ -14,7 +14,7 @@ You can either copy the PHP files directly into your project or preferable just 
 
 Composer require command
 
-`composer require ryantxr/slack-webhooks`
+`composer require ryantxr/slack-webhook`
 
 ## Features
 
