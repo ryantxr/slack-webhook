@@ -5,12 +5,37 @@ use GuzzleHttp\Psr7\Request;
 class Client
 {
     protected $url;
+	protected $tempUrl; // if this is set to a channel, use it.
+	protected $webhooks;
     public function __construct($arg=null)
     {
-        if ( is_string($arg) ) {
+		if ( is_array($arg) ) {
+			if ( count($arg) > 0 ) {
+				$i = 0;
+				foreach ( $arg as $k => $v ) {
+					if ( $i == 0 ) {
+						$this->webhooks['default'] = $v;
+					}
+					$this->webhooks[$k] = $v;
+				}
+			}
+		} elseif ( is_string($arg) ) {
+			$this->webhooks['default'] = $arg;
             $this->url = $arg;
         }
     }
+
+	/**
+	 * Switch channels
+	 */
+	public function channel(string $channel)
+	{
+		if ( ! isset($this->webhooks[$channel]) ) {
+			throw new \Exception("Unknown channel {$channel}");
+		}
+		$this->tempUrl = $this->webhooks[$channel];
+		return $this;
+	}
 
 	/**
 	 * message
@@ -43,16 +68,17 @@ class Client
         // echo "\n";
         // exit;
 		$client = new Guzzle;
-		
+		$url = ( $this->tempUrl ) ? $this->tempUrl : $this->url;
+		$this->tempUrl = null; // put it back
 		if ( is_string($data) ) {
-			$request = new Request('POST', $this->url);
+			$request = new Request('POST', $url);
 			$response = $client->send($request, [
 				'json' => [
 					'text' => $data
 					]
 					]);
 		} elseif ( is_array($data) ) {
-			$request = new Request('POST', $this->url, ['Content-Type' => 'application/json']);
+			$request = new Request('POST', $url, ['Content-Type' => 'application/json']);
 			//print_r($data);
 			$response = $client->send($request, [
 			'json' => $data
