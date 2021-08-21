@@ -32,3 +32,21 @@ use Ryantxr\Slack\Webhook\Client as Webhook;
 $webhook = new Webhook( 'YOUR_SLACK_WEBHOOK_URL' );
 $webhook->message('This is a message');
 ```
+
+### Multiple Webhooks / Channels
+
+If you need to write to multiple channels, make a webhook for each channel.
+Then, initialize the class like this:
+
+```php
+<?php
+
+use Ryantxr\Slack\Webhook\Client as Webhook;
+
+$config = [
+    'channel1' => 'YOUR_SLACK_CHANNEL1_WEBHOOK_URL',
+    'channel2' => 'YOUR_SLACK_CHANNEL2_WEBHOOK_URL'
+];
+$webhook = new Webhook( $config );
+$webhook->channel('channel1')->message('This is a message');
+```
