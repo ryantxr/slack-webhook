@@ -23,7 +23,6 @@
     },
     "require-dev": {
         "infection/infection": "*",
-        "phpbench/phpbench": "*",
         "phpstan/phpstan-phpunit": "*",
         "phpstan/extension-installer": "*",
         "phpunit/phpunit": "*",
