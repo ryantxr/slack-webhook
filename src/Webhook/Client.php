@@ -7,6 +7,18 @@ class Client
     protected $url;
 	protected $tempUrl; // if this is set to a channel, use it.
 	protected $webhooks;
+	protected $client; // The guzzle client
+
+	/**
+	 * Configure a single default channel.
+	 * 		new Client('a-default-channel-webhook')
+	 * Configure multiple channels
+	 * 		new Client(['blah' => 'webhook1', 
+	 * 			'channel1-name' => 'channel1-webhook',
+	 * 			'channel2-name' => 'channel2-webhook'
+	 * 		]);
+	 * @param string | array $arg
+	 */
     public function __construct($arg=null)
     {
 		if ( is_array($arg) ) {
@@ -23,12 +35,15 @@ class Client
 			$this->webhooks['default'] = $arg;
             $this->url = $arg;
         }
+		$this->client = new Guzzle;
     }
 
 	/**
 	 * Switch channels
+	 * @param string $channel
+	 * @return Client | null
 	 */
-	public function channel(string $channel)
+	public function channel(string $channel) : ?Client
 	{
 		if ( ! isset($this->webhooks[$channel]) ) {
 			throw new \Exception("Unknown channel {$channel}");
@@ -55,24 +70,21 @@ class Client
 	/**
 	 * post
 	 *
-	 * 
-	 * 
+	 * @param string $data the message to send
 	 *
-	 * @param string $message the message to send
-	 *
-	 * @return string
+	 * @return array
 	 */
-	protected function post($data)
+	protected function post($data) : array
 	{
         // echo $this->url;
         // echo "\n";
         // exit;
-		$client = new Guzzle;
 		$url = ( $this->tempUrl ) ? $this->tempUrl : $this->url;
 		$this->tempUrl = null; // put it back
+		$response = null;
 		if ( is_string($data) ) {
 			$request = new Request('POST', $url);
-			$response = $client->send($request, [
+			$response = $this->client->send($request, [
 				'json' => [
 					'text' => $data
 					]
@@ -80,14 +92,17 @@ class Client
 		} elseif ( is_array($data) ) {
 			$request = new Request('POST', $url, ['Content-Type' => 'application/json']);
 			//print_r($data);
-			$response = $client->send($request, [
+			$response = $this->client->send($request, [
 			'json' => $data
 			]);
 		}
-
-		$code = $response->getStatusCode(); // 200
-		$reason = $response->getReasonPhrase(); // OK
-		$body = $response->getBody();
+		if ( is_object($response) ) {
+			$code = $response->getStatusCode(); // 200
+			$reason = $response->getReasonPhrase(); // OK
+			$body = $response->getBody();
+		} else {
+			$code = $reason = $body = null;
+		}
 
 		// echo "code = $code\n";
 		// echo "reason = $reason\n";
