@@ -22,14 +22,29 @@
         }
     },
     "require-dev": {
-        "phpstan/phpstan": "^1.8",
-        "phpstan/phpstan-phpunit": "^1.1",
-        "phpstan/extension-installer": "^1.2",
-        "phpunit/phpunit": "^9.5"
+        "infection/infection": "*",
+        "phpbench/phpbench": "*",
+        "phpstan/phpstan-phpunit": "*",
+        "phpstan/extension-installer": "*",
+        "phpunit/phpunit": "*",
+        "squizlabs/php_codesniffer": "*",
+        "thecodingmachine/phpstan-strict-rules": "*"
     },
     "config": {
         "allow-plugins": {
-            "phpstan/extension-installer": true
+            "phpstan/extension-installer": true,
+            "infection/extension-installer": true
         }
+    },
+    "scripts": {
+        "phpcs": "phpcs",
+        "phpcbf": "phpcbf",
+        "phpstan": "phpstan analyse src/ -c phpstan.neon --level=9 --no-progress -vv --memory-limit=-1",
+        "phpunit": "phpunit",
+        "infection": "XDEBUG_MODE=coverage infection --min-msi=50 --min-covered-msi=50 --log-verbosity=all",
+        "coverage": "XDEBUG_MODE=coverage phpunit --coverage-text --coverage-html ./var/coverage/html --coverage-clover ./var/coverage/clover.xml",
+        "ci:pack": [
+            "@phpcs", "@phpstan", "@phpunit", "@infection", "@coverage"
+        ]
     }
 }

@@ -1,24 +1,42 @@
-<?php declare(strict_types = 1);
-use PHPUnit\Framework\TestCase;
+<?php
 
-/**
-*  Corresponding Class to test YourClass class
-*
-*  @author yourname
-*/
+declare(strict_types=1);
+
+use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Psr7\Response;
+use PHPUnit\Framework\TestCase;
+use Ryantxr\Slack\Webhook\Client;
+use Ryantxr\Slack\Webhook\Exception\AtLeastOneChannelNeededException;
+use Ryantxr\Slack\Webhook\Exception\UnknownChannelException;
+use function PHPUnit\Framework\assertSame;
+
 class ClientTest extends TestCase
 {
-    /**
-     * Just check if the YourClass has no syntax error 
-     *
-     * This is just a simple check to make sure your library has no syntax error. This helps you troubleshoot
-     * any typo before you even use this library in a real project.
-     *
-     */
-    public function testIsThereAnySyntaxError()
+    public function testConstructorAndChannel()
     {
-        $var = new \Ryantxr\Slack\Webhook\Client([]);
-        $this->assertTrue(is_object($var));
-        unset($var);
+        $client = new Client('default');
+        $client->channel('default');
+        $this->expectException(UnknownChannelException::class);
+        $client->channel('unknown');
+        unset($client);
+    }
+
+    public function testEmptyChannels()
+    {
+        $this->expectException(AtLeastOneChannelNeededException::class);
+        new Client();
+    }
+
+    public function testMessage()
+    {
+        $channel = 'some-channel';
+        $guzzleMock = $this->createMock(ClientInterface::class);
+        $guzzleMock
+            ->expects(self::once())
+            ->method('send')
+            ->willReturn(new Response());
+        $client = Client::constructWithHttpClient($guzzleMock, $channel);
+        $response = $client->message('test');
+        assertSame(200, $response->getStatusCode());
     }
 }

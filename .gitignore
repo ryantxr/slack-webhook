@@ -1,2 +1,7 @@
 /examples/config.php
 /vendor
+composer.lock
+var
+.php_cs.cache
+.phpunit.result.cache
+.idea

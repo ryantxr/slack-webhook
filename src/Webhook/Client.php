@@ -1,112 +1,72 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Ryantxr\Slack\Webhook;
+
 use GuzzleHttp\Client as Guzzle;
+use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Request;
+use Psr\Http\Message\ResponseInterface;
+use Ryantxr\Slack\Webhook\Exception\AtLeastOneChannelNeededException;
+use Ryantxr\Slack\Webhook\Exception\UnknownChannelException;
+
 class Client
 {
-    protected $url;
-	protected $tempUrl; // if this is set to a channel, use it.
-	protected $webhooks;
-	protected $client; // The guzzle client
+    protected string $currentChannelWebhook;
+    /** @var string[] $webhooks */
+    protected array $webhooks;
+    protected ClientInterface $client;
 
-	/**
-	 * Configure a single default channel.
-	 * 		new Client('a-default-channel-webhook')
-	 * Configure multiple channels
-	 * 		new Client(['blah' => 'webhook1', 
-	 * 			'channel1-name' => 'channel1-webhook',
-	 * 			'channel2-name' => 'channel2-webhook'
-	 * 		]);
-	 * @param string | array $arg
-	 */
-    public function __construct($arg=null)
+    /**
+     * Expects webhooks as variadic (comma separated arguments)
+     * new Client('a-default-channel-webhook', 'channel1-webhook', 'channel2-webhook')
+     * @throws AtLeastOneChannelNeededException
+     */
+    final public function __construct(string ...$webhooks)
     {
-		if ( is_array($arg) ) {
-			if ( count($arg) > 0 ) {
-				$i = 0;
-				foreach ( $arg as $k => $v ) {
-					if ( $i == 0 ) {
-						$this->webhooks['default'] = $v;
-					}
-					$this->webhooks[$k] = $v;
-				}
-			}
-		} elseif ( is_string($arg) ) {
-			$this->webhooks['default'] = $arg;
-            $this->url = $arg;
+        if ([] === $webhooks) {
+            throw new AtLeastOneChannelNeededException();
         }
-		$this->client = new Guzzle;
+        $this->webhooks = $webhooks;
+        $this->currentChannelWebhook = $this->webhooks[0];
+        $this->client = new Guzzle();
     }
 
-	/**
-	 * Switch channels
-	 * @param string $channel
-	 * @return Client | null
-	 */
-	public function channel(string $channel) : ?Client
-	{
-		if ( ! isset($this->webhooks[$channel]) ) {
-			throw new \Exception("Unknown channel {$channel}");
-		}
-		$this->tempUrl = $this->webhooks[$channel];
-		return $this;
-	}
+    /** @throws AtLeastOneChannelNeededException */
+    public static function constructWithHttpClient(ClientInterface $client, string ...$webhooks): self
+    {
+        $self = new static(...$webhooks);
+        $self->client = $client;
+        return $self;
+    }
 
-	/**
-	 * message
-	 *
-	 * @param string $text A string containing the message to send
-	 *
-	 * @return void
-	 */
-	public function message($text)
-	{
-        $data = ['text' => $text];
-        // Send as JSON
-		$this->post($data);
-		// $this->post($text);
-	}
+    /**
+     * Switch channels
+     * @throws UnknownChannelException
+     */
+    public function channel(string $channel): Client
+    {
+        if (!in_array($channel, $this->webhooks)) {
+            throw new UnknownChannelException("Unknown channel {$channel}");
+        }
+        $this->currentChannelWebhook = $channel;
+        return $this;
+    }
 
-	/**
-	 * post
-	 *
-	 * @param string $data the message to send
-	 *
-	 * @return array
-	 */
-	protected function post($data) : array
-	{
-        // echo $this->url;
-        // echo "\n";
-        // exit;
-		$url = ( $this->tempUrl ) ? $this->tempUrl : $this->url;
-		$this->tempUrl = null; // put it back
-		$response = null;
-		if ( is_string($data) ) {
-			$request = new Request('POST', $url);
-			$response = $this->client->send($request, [
-				'json' => [
-					'text' => $data
-					]
-					]);
-		} elseif ( is_array($data) ) {
-			$request = new Request('POST', $url, ['Content-Type' => 'application/json']);
-			//print_r($data);
-			$response = $this->client->send($request, [
-			'json' => $data
-			]);
-		}
-		if ( is_object($response) ) {
-			$code = $response->getStatusCode(); // 200
-			$reason = $response->getReasonPhrase(); // OK
-			$body = $response->getBody();
-		} else {
-			$code = $reason = $body = null;
-		}
-
-		// echo "code = $code\n";
-		// echo "reason = $reason\n";
-		// echo "body = $body\n";
-		return compact('code', 'body', 'reason');
-	}    
+    /** @throws GuzzleException */
+    public function message(string $text): ResponseInterface
+    {
+        return $this->client->send(
+            new Request(
+                'POST',
+                $this->currentChannelWebhook,
+                ['Content-Type' => 'application/json']
+            ),
+            [
+            'json' => ['text' => $text],
+            ]
+        );
+    }
 }
