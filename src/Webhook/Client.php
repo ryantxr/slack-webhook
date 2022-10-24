@@ -63,7 +63,11 @@ class Client
 			return false;
 		}
 
+<<<<<<< HEAD
 		if ( $response->getStatusCode() >= 300 ) {
+=======
+		if ( $response->getStatusCode() > 300 ) {
+>>>>>>> 3a821ab6817bcb4365739042e2bade2a8b865a63
 			return false;
 		}
 
