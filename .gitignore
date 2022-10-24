@@ -1,2 +1,4 @@
-/examples/config.php
-/vendor
+build/
+examples/config.php
+vendor/
+.phpunit.cache/
