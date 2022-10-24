@@ -25,7 +25,8 @@
         "phpstan/phpstan": "^1.8",
         "phpstan/phpstan-phpunit": "^1.1",
         "phpstan/extension-installer": "^1.2",
-        "phpunit/phpunit": "^9.5"
+        "phpunit/phpunit": "^9.5",
+        "squizlabs/php_codesniffer": "*"
     },
     "config": {
         "allow-plugins": {

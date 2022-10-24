@@ -1,12 +1,14 @@
 <?php
 namespace Ryantxr\Slack\Webhook;
+
 use GuzzleHttp\Client as Guzzle;
 use GuzzleHttp\Psr7\Request;
+
 /**
  * Configure a single default channel.
  *      new Client('a-default-channel-webhook')
  * Configure multiple channels
- *      new Client(['blah' => 'webhook1', 
+ *      new Client(['blah' => 'webhook1',
  *        'channel1-name' => 'channel1-webhook',
  *        'channel2-name' => 'channel2-webhook'
  *      ]);
@@ -20,7 +22,7 @@ class Client
 
     /**
      * Constructor
-     * 
+     *
      * @param string | array $arg takes a token or array of tokens
      */
     public function __construct($arg=null)
@@ -44,8 +46,8 @@ class Client
 
     /**
      * Switch channels
-     * 
-     * @param string - $channel which channel do you want
+     *
+     * @param string $channel which channel do you want
      * 
      * @return Client | null
      */
@@ -91,17 +93,17 @@ class Client
         if ( is_string($data) ) {
             $request = new Request('POST', $url);
             $response = $this->client->send(
-                $request, [
-                    'json' => [
-                        'text' => $data
-                    ]
+                $request,
+                [
+                    'json' => ['text' => $data]
                 ]
             );
         } elseif ( is_array($data) ) {
             $request = new Request('POST', $url, ['Content-Type' => 'application/json']);
             //print_r($data);
             $response = $this->client->send(
-                $request, [
+                $request,
+                [
                     'json' => $data
                 ]
             );
