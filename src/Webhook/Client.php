@@ -1,97 +1,72 @@
 <?php
 namespace Ryantxr\Slack\Webhook;
+
 use GuzzleHttp\Client as Guzzle;
 use GuzzleHttp\Psr7\Request;
+use Psr\Http\Client\ClientExceptionInterface;
+use Psr\Http\Client\ClientInterface;
+
 class Client
 {
-    protected $url;
-	protected $tempUrl; // if this is set to a channel, use it.
-	protected $webhooks;
-    public function __construct($arg=null)
-    {
-		if ( is_array($arg) ) {
-			if ( count($arg) > 0 ) {
-				$i = 0;
-				foreach ( $arg as $k => $v ) {
-					if ( $i == 0 ) {
-						$this->webhooks['default'] = $v;
-					}
-					$this->webhooks[$k] = $v;
-				}
-			}
-		} elseif ( is_string($arg) ) {
-			$this->webhooks['default'] = $arg;
-            $this->url = $arg;
-        }
-    }
+	/**
+	 * @var array<array-key,string>
+	 */
+	protected array $webhooks;
+	protected ClientInterface $httpClient;
 
 	/**
-	 * Switch channels
+	 * @param string|array<array-key,string> $webhook Webhook URL or an array of key/value pairs for webhook URLs where the key is an alias or channel name for the webhook.
+	 * @param ClientInterface|null $httpClient HTTP ClientInterface instance to send requests. Defaults to Guzzle.
 	 */
-	public function channel(string $channel)
+	public function __construct(string|array $webhook, ?ClientInterface $httpClient = null)
 	{
-		if ( ! isset($this->webhooks[$channel]) ) {
-			throw new \Exception("Unknown channel {$channel}");
+		if( \is_string($webhook) ){
+			$this->webhooks["default"] = $webhook;
 		}
-		$this->tempUrl = $this->webhooks[$channel];
-		return $this;
+		else {
+			$this->webhooks = $webhook;
+		}
+
+		$this->httpClient = $httpClient ?: new Guzzle;
 	}
 
 	/**
-	 * message
+	 * Send message to given channel.
 	 *
-	 * @param string $text A string containing the message to send
-	 *
-	 * @return void
+	 * @param string|array $message A string containing the message to send or an associative array of a full Slack message.
+	 * @param string $channel The channel to send the message to. Defaults to "default".
+	 * @see https://api.slack.com/reference/messaging/payload
+	 * @return bool Returns true on successful send or false if message could not be sent.
 	 */
-	public function message($text)
+	public function send(string|array $message, string $channel = "default"): bool
 	{
-        $data = ['text' => $text];
-        // Send as JSON
-		$this->post($data);
-		// $this->post($text);
-	}
-
-	/**
-	 * post
-	 *
-	 * 
-	 * 
-	 *
-	 * @param string $message the message to send
-	 *
-	 * @return string
-	 */
-	protected function post($data)
-	{
-        // echo $this->url;
-        // echo "\n";
-        // exit;
-		$client = new Guzzle;
-		$url = ( $this->tempUrl ) ? $this->tempUrl : $this->url;
-		$this->tempUrl = null; // put it back
-		if ( is_string($data) ) {
-			$request = new Request('POST', $url);
-			$response = $client->send($request, [
-				'json' => [
-					'text' => $data
-					]
-					]);
-		} elseif ( is_array($data) ) {
-			$request = new Request('POST', $url, ['Content-Type' => 'application/json']);
-			//print_r($data);
-			$response = $client->send($request, [
-			'json' => $data
-			]);
+		if ( !isset($this->webhooks[$channel]) ) {
+			throw new ChannelException("Unknown channel \"" . $channel . "\".");
 		}
 
-		$code = $response->getStatusCode(); // 200
-		$reason = $response->getReasonPhrase(); // OK
-		$body = $response->getBody();
+		if ( \is_string($message) ) {
+			$message = ["text" => $message];
+		}
 
-		// echo "code = $code\n";
-		// echo "reason = $reason\n";
-		// echo "body = $body\n";
-		return compact('code', 'body', 'reason');
-	}    
+		$request = new Request(
+			"post",
+			$this->webhooks[$channel],
+			["Content-Type" => "application/json"],
+			\json_encode($message)
+		);
+		
+		try {
+
+			$response = $this->httpClient->sendRequest($request);
+		}
+		catch ( ClientExceptionInterface $clientException ) {
+			return false;
+		}
+
+		if ( $response->getStatusCode() > 300 ) {
+			return false;
+		}
+
+		return true;
+	}
 }
