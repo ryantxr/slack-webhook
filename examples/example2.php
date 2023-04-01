@@ -4,9 +4,9 @@ require __DIR__.'/../vendor/autoload.php';
 use Ryantxr\Slack\Webhook\Client;
 
 
-class ExampleApp1
+class ExampleApp2
 {
-
+    public $config;
     public function __construct($config)
     {
         $this->config = $config['webhooks'];
@@ -24,7 +24,7 @@ class ExampleApp1
     }
 }
 
-$config = require __DIR__ . '/config.php';
+$config = include __DIR__ . '/config.php';
 if ( count($argv) > 2 ) {
-    (new ExampleApp1($config))->run($argv[1], $argv[2]);
+    (new ExampleApp2($config))->run($argv[1], $argv[2]);
 }

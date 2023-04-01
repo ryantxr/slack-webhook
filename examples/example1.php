@@ -6,10 +6,12 @@ use Ryantxr\Slack\Webhook\Client;
 
 class ExampleApp1
 {
+    public $config;
 
     public function __construct($config)
     {
         $this->config = $config['webhook'];
+        print_r($this->config);
     }
 
     public function run($msg)
@@ -24,7 +26,7 @@ class ExampleApp1
     }
 }
 
-$config = require __DIR__ . '/config.php';
+$config = include __DIR__ . '/config.php';
 if ( count($argv) > 1 ) {
     (new ExampleApp1($config))->run($argv[1]);
 }
