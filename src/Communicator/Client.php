@@ -14,9 +14,12 @@ class Client
 
     /** @var string */
     private $slackToken;
-
+    
     /** @var array|string|null */
     private $defaultIcon;
+    
+    /** @var string */
+    private $defaultChannelName;
 
     /**
      * SlackCommunicator constructor.
@@ -40,7 +43,7 @@ class Client
      * @return bool
      * @throws \Exception
      */
-    public function sendMessage($channelName, $message, $icon = null)
+    public function message($message, $channelName = null, $icon = null)
     {
         // Get the channel ID for the specified channel name
         $channelId = $this->getChannelId($channelName);
@@ -109,9 +112,14 @@ class Client
      */
     private function getChannelId($channelName)
     {
+        if ( $channelName == null ) {
+            $channelName = $this->defaultChannelName;
+        }
+        $this->debug(__METHOD__ . " $channelName");
         // Check if the channel ID can be parsed as JSON
         $decoded = json_decode($channelName);
         if (is_object($decoded) && isset($decoded->channel_id)) {
+            $this->debug("return decoded");
             return $decoded->channel_id;
         }
 
@@ -143,6 +151,18 @@ class Client
         } catch (GuzzleException $e) {
             throw new \Exception($e->getMessage());
         }
+    }
+
+    /**
+     * Sets the default channel to be used in messages.
+     *
+     * @param string|array|null $channel
+     * @return Client
+     */
+    public function channel($channel)
+    {
+        $this->defaultChannelName = $channel;
+        return $this;
     }
 
     /**
