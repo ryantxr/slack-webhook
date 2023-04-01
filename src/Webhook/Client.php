@@ -15,10 +15,33 @@ use GuzzleHttp\Psr7\Request;
  */
 class Client
 {
+    /**
+     * The default webhook URL to use if a single webhook is passed to the constructor.
+     *
+     * @var string|null
+     */
     protected $url;
-    protected $tempUrl; // if this is set to a channel, use it.
+
+    /**
+     * The temporary webhook URL to use if a channel-specific webhook is set using the `channel()` method.
+     *
+     * @var string|null
+     */
+    protected $tempUrl;
+
+    /**
+     * An array of channel-specific webhook URLs to use if an array of webhooks is passed to the constructor.
+     *
+     * @var array|null
+     */
     protected $webhooks;
-    protected $client; // The guzzle client
+
+    /**
+     * The Guzzle client to use for sending requests to Slack.
+     *
+     * @var GuzzleHttp\Client
+     */
+    protected $client;
 
     /**
      * Constructor
@@ -42,6 +65,17 @@ class Client
             $this->url = $arg;
         }
         $this->client = new Guzzle;
+    }
+
+    /**
+     * Set the client to use for http
+     * @param \Psr\Http\Client\ClientInterface $client
+     * @return self
+     */
+    public function setClient(\Psr\Http\Client\ClientInterface $client)
+    {
+        $this->client = $client;
+        return $this;
     }
 
     /**
@@ -71,22 +105,49 @@ class Client
     {
         $data = ['text' => $text];
         // Send as JSON
-        $this->post($data);
+        return $this->post($data);
         // $this->post($text);
     }
 
     /**
-     * Post using guzzle
+     * Post to the incoming webhook endpoint.
      *
      * @param string $data the message to send
      *
      * @return array
      */
+
+    protected function post($data): array
+    {
+        $url = ($this->tempUrl) ? $this->tempUrl : $this->url;
+        $this->tempUrl = null; // put it back
+        $response = null;
+        if (is_string($data)) {
+            $request = new Request('POST', $url);
+            $response = $this->client->sendRequest(
+                $request->withBody(\GuzzleHttp\Psr7\Utils::streamFor($data))
+            );
+        } elseif (is_array($data)) {
+            $request = new Request('POST', $url, ['Content-Type' => 'application/json']);
+            $response = $this->client->sendRequest(
+                $request->withBody(\GuzzleHttp\Psr7\Utils::streamFor(json_encode($data)))
+            );
+        }
+        if (is_object($response)) {
+            $code = $response->getStatusCode(); // 200
+            $reason = $response->getReasonPhrase(); // OK
+            $body = $response->getBody();
+        } else {
+            $code = $reason = $body = null;
+        }
+    
+        return compact('code', 'body', 'reason');
+    }
+     
+
+     /*
     protected function post($data) : array
     {
-        // echo $this->url;
-        // echo "\n";
-        // exit;
         $url = ( $this->tempUrl ) ? $this->tempUrl : $this->url;
         $this->tempUrl = null; // put it back
         $response = null;
@@ -116,9 +177,34 @@ class Client
             $code = $reason = $body = null;
         }
 
-        // echo "code = $code\n";
-        // echo "reason = $reason\n";
-        // echo "body = $body\n";
         return compact('code', 'body', 'reason');
-    }    
+    }
+    */
+
+    /**
+     * Return the URL
+     * @return string
+     */
+    public function getUrl()
+    {
+        return $this->url;
+    }
+
+    /**
+     * Return the URL
+     * @return string
+     */
+    public function getTempUrl()
+    {
+        return $this->tempUrl;
+    }
+
+    /**
+     * Return a webhook
+     * @return string|null
+     */
+    public function getWebhook($name)
+    {
+        return $this->webhooks[$name] ?? null;
+    }
 }
