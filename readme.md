@@ -61,3 +61,63 @@ $config = [
 $webhook = new Webhook( $config );
 $webhook->channel('channel1')->message('This is a message');
 ```
+
+## Slack Communicator
+
+This is a new class that uses the Slack conversations API instead of using webhooks.
+The only upside I can see is that it can be used to access multiple channels.
+
+Here is how you use it.
+
+```php
+$slackToken = 'YOUR_SLACK_TOKEN';
+$channelDescriptor = '{"channel_id": "C0000000008", "name": "random"}';
+$channelDescriptor2 = '{"channel_id": "C1110000008", "name": "general"}';
+use Ryantxr\Slack\Communicator\Client as SlackCommunicator;
+$comm = new SlackCommunicator($slackToken);
+// Set a default channel
+$comm->channel($channelDescriptor);
+// Send message to default channel
+$comm->message('Some message');
+// That's it!!
+
+// Send to a different channel
+$comm->message('Some message', $channelDescriptor2);
+```
+
+### Icons
+
+It is possible to use different icons for the messages.
+If you don't specify one, slack will use the default for the slack app.
+
+There are two ways to specify an icon.
+
+1. Emoji. ":rocket:"
+2. URL. "https://somewhere/something"
+
+You can specify a default icon or use a different icon for each message.
+
+```php
+$icon = ':blue_car:';
+$comm->icon($icon); // set default
+
+// Send message to default channel with a specific icon.
+$comm->message('Some message', null, $icon);
+
+// Send message to a specific channel with a specific icon.
+$comm->message('Some message', $channelDescriptor2, $icon);
+```
+
+## Creating the communicator object
+
+Construct a SlackCommunicator object from a container like this:
+
+```php
+function getObject() {
+    // Assume there is some way to get the configuration
+    $comm = (new SlackCommunicator(config('slack_token')))
+        ->channel(config('slack_channel'))
+        ->setIcon(config('slack_icon'));
+    return $comm;
+}
+```
