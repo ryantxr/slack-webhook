@@ -1,11 +1,14 @@
 <?php
 namespace Ryantxr\Slack\Communicator;
 
+use Ryantxr\Slack\CanLog;
 use GuzzleHttp\Client as Guzzle;
 use GuzzleHttp\Exception\GuzzleException;
 
 class Client
 {
+    use CanLog;
+
     /** @var Guzzle */
     private $client;
 
@@ -59,14 +62,14 @@ class Client
         if ( ! empty($icon) ) {
             if (preg_match('/^:.+:$/', $icon)) {
                 $iconParam = ['icon_emoji' => $icon];
-                Log::debug("Using emoji {$icon}");
+                $this->debug("Using emoji {$icon}");
             } else {
                 $iconParam = ['icon_url' => $icon];
-                Log::debug("Using url {$icon}");
+                $this->debug("Using url {$icon}");
             }
             $params = array_merge($params, $iconParam);
         }
-        // Log::debug("params " . json_encode($params));
+        $this->debug("params " . json_encode($params));
         try {
             $response = $this->client->request('POST', 'chat.postMessage', [
                 'headers' => [
