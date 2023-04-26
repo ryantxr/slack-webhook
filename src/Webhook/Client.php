@@ -128,10 +128,25 @@ class Client
                 $request->withBody(\GuzzleHttp\Psr7\Utils::streamFor($data))
             );
         } elseif (is_array($data)) {
-            $request = new Request('POST', $url, ['Content-Type' => 'application/json']);
-            $response = $this->client->sendRequest(
-                $request->withBody(\GuzzleHttp\Psr7\Utils::streamFor(json_encode($data)))
-            );
+            // Check if the client uses Guzzle 6 or Guzzle 7
+            $isGuzzle6 = method_exists($this->client, 'version') && version_compare($this->client->version, '6.0', '>=');
+
+            // Create a stream for the request body
+            if ($isGuzzle6) {
+                $stream = \GuzzleHttp\Psr7\stream_for(json_encode($data));
+            } else {
+                $stream = \GuzzleHttp\Psr7\Utils::streamFor(json_encode($data));
+            }
+
+            // Create a request and set the request body
+            $headers = ['Content-Type' => 'application/json'];
+            $options = [
+                'headers' => $headers,
+                'body' => $stream
+            ];
+
+            // Send the request
+            $response = $this->client->request('POST', $url, $options);
         }
         if (is_object($response)) {
             $code = $response->getStatusCode(); // 200
